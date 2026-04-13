@@ -276,7 +276,7 @@ img {
   opacity: 0;
   transform: translateY(20px);
   animation: heroFadeUp 1s ease-out forwards;
-  animation-delay: 0.45s;
+  animation-delay: 0.4s;
 }
 
 .hero-buttons {
@@ -289,7 +289,7 @@ img {
   opacity: 0;
   transform: translateY(20px);
   animation: heroFadeUp 1s ease-out forwards;
-  animation-delay: 0.7s;
+  animation-delay: 0.6s;
 }
 
 /* Hero Carousel */
@@ -322,7 +322,6 @@ img {
   display: flex;
   width: 100%;
   transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: transform;
 }
 
 .carousel-slide {
@@ -333,35 +332,38 @@ img {
 
 .carousel-panel {
   width: 100%;
-  padding: 28px;
-  border-radius: 28px;
-  background: rgba(15, 23, 42, 0.34);
+  padding: 24px;
+  border-radius: 24px;
+  background: rgba(15, 23, 42, 0.42);
   border: 1px solid rgba(255, 255, 255, 0.14);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   box-shadow: 0 20px 70px rgba(0, 0, 0, 0.28);
 }
 
 .carousel-eyebrow {
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   color: #c4b5fd;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-align: left;
+  opacity: 0.92;
 }
 
 .carousel-title {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   color: white;
-  font-size: 34px;
+  font-size: 30px;
+  font-weight: 800;
   text-align: left;
   word-break: keep-all;
+  line-height: 1.2;
 }
 
 .carousel-grid {
   display: grid;
-  gap: 18px;
+  gap: 14px;
   width: 100%;
 }
 
@@ -375,9 +377,9 @@ img {
 
 .glass-card {
   min-width: 0;
-  min-height: 210px;
-  padding: 24px;
-  border-radius: 22px;
+  min-height: 172px;
+  padding: 20px;
+  border-radius: 18px;
   background: rgba(255, 255, 255, 0.12);
   border: 1px solid rgba(255, 255, 255, 0.12);
   color: white;
@@ -386,26 +388,35 @@ img {
 }
 
 .glass-card h3 {
-  margin-bottom: 12px;
-  font-size: 24px;
-  line-height: 1.35;
+  margin-bottom: 10px;
+  font-size: 21px;
+  line-height: 1.3;
+  word-break: keep-all;
+  font-weight: 700;
+}
+
+.glass-card p {
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.6;
+  font-size: 15px;
   word-break: keep-all;
 }
 
-.glass-card p,
 .preview-list li {
-  color: rgba(255, 255, 255, 0.86);
-  line-height: 1.7;
-  font-size: 16px;
+  color: rgba(255, 255, 255, 0.96);
+  line-height: 1.6;
+  font-size: 15px;
+  font-weight: 500;
   word-break: keep-all;
 }
 
 .card-number {
   display: inline-block;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
   color: #c4b5fd;
   font-weight: 800;
-  font-size: 14px;
+  font-size: 13px;
+  letter-spacing: 0.06em;
 }
 
 .preview-list {
@@ -414,11 +425,11 @@ img {
 }
 
 .preview-list li {
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .carousel-dots {
-  margin-top: 20px;
+  margin-top: 16px;
   display: flex;
   gap: 10px;
   justify-content: center;
@@ -621,22 +632,28 @@ img {
   }
 
   .hero-overlay {
-    padding: 100px 14px 20px;
+    padding: 88px 14px 18px;
   }
 
   .hero-content {
-    padding: 22px 18px;
-    border-radius: 22px;
+    padding: 18px 14px;
+    border-radius: 18px;
   }
 
   .hero h1 {
-    font-size: 34px;
+    font-size: 30px;
+    margin-bottom: 16px;
   }
 
   .hero-description {
-    font-size: 15px;
-    line-height: 1.6;
-    margin-bottom: 24px;
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 18px;
+  }
+
+  .hero-buttons {
+    gap: 10px;
+    padding-bottom: 18px;
   }
 
   .hero-badge {
@@ -649,8 +666,7 @@ img {
   }
 
   .carousel-panel {
-    padding: 16px;
-    border-radius: 18px;
+    padding: 14px;
   }
 
   .carousel-title {
@@ -658,17 +674,18 @@ img {
   }
 
   .glass-card {
-    padding: 18px;
-    border-radius: 18px;
+    padding: 14px;
   }
 
   .glass-card h3 {
-    font-size: 20px;
+    font-size: 18px;
   }
+
 
   .glass-card p,
   .preview-list li {
-    font-size: 14px;
+    font-size: 13px;
+    line-height: 1.5;
   }
 
   .carousel-arrow {

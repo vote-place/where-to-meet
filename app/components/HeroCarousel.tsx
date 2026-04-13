@@ -34,39 +34,39 @@ type Slide = HowSlide | PreviewSlide;
 const slides: Slide[] = [
   {
     id: "how",
-    eyebrow: "HOW IT WORKS",
-    title: "이용 방법",
+    eyebrow: "WHY WHERE TO MEET",
+    title: "장소 정하느라 길어지는 대화, 여기서 끝",
     layout: "three",
     items: [
       {
         number: "01",
-        title: "호스트가 후보 장소를 고릅니다",
+        title: "후보를 한 번에 모으세요",
         description:
-          "만날 수 있는 장소를 후보로 먼저 등록하고 링크를 공유합니다.",
+          "채팅방에 흩어진 장소 의견을 한 곳에 정리할 수 있습니다.",
       },
       {
         number: "02",
-        title: "참여자가 장소를 추가하거나 선택합니다",
+        title: "투표로 빠르게 좁히세요",
         description:
-          "링크를 받은 참여자가 원하는 장소를 고르거나 새 장소를 제안합니다.",
+          "마음에 드는 장소에 바로 투표하고, 인기 있는 후보를 쉽게 확인하세요.",
       },
       {
         number: "03",
-        title: "가장 많이 선택된 장소로 결정합니다",
+        title: "헷갈리지 않게 결정하세요",
         description:
-          "최종적으로 가장 많은 선택을 받은 장소를 기준으로 만납니다.",
+          "가장 적합한 장소를 빠르게 정하고, 모두가 같은 결과를 확인할 수 있습니다.",
       },
     ],
   },
   {
     id: "preview",
-    eyebrow: "PREVIEW",
-    title: "이런 느낌으로 사용할 수 있어요",
+    eyebrow: "REAL USE CASE",
+    title: "팀플, 모임, 약속 장소를 이렇게 정하세요",
     layout: "two",
     items: [
       {
         title: "후보 장소",
-        list: ["강남역 카페 모임", "성수 브런치 카페", "잠실 스터디룸"],
+        list: ["강남역 카페", "성수 브런치 카페", "잠실 스터디룸"],
       },
       {
         title: "투표 현황",
