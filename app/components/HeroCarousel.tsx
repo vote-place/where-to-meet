@@ -100,7 +100,6 @@ export default function HeroCarousel() {
           onClick={prevSlide}
           aria-label="이전 슬라이드 보기"
         >
-          <span>‹</span>
         </button>
 
         <div className="carousel-viewport">
@@ -162,7 +161,6 @@ export default function HeroCarousel() {
           onClick={nextSlide}
           aria-label="다음 슬라이드 보기"
         >
-          <span>›</span>
         </button>
       </div>
     </section>
