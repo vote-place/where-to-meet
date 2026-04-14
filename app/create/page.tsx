@@ -152,14 +152,13 @@ export default function CreatePage() {
           <div className="create-page-heading">
             <p className="create-page-eyebrow">CREATE A MEET</p>
             <h1>
-              모임을 만들고,
+              먼저 방을 만들고,
               <br />
-              방 안에서 함께 장소를 모으세요
+              그 안에서 장소를 정하세요
             </h1>
             <p className="create-page-description">
-              지금은 모임 이름과 투표 마감 시간만 설정하면 됩니다.
-              <br />
-              후보 장소는 방이 생성된 뒤 참여자들과 함께 자유롭게 추가할 수 있습니다.
+              지금은 모임 이름과 마감 시간만 정하면 됩니다.
+              생성된 방 안에서 참여자들과 함께 후보 장소를 모으고 투표를 시작할 수 있습니다.
             </p>
           </div>
 
@@ -208,13 +207,8 @@ export default function CreatePage() {
               모임 생성하기
             </button>
 
-            <div className="create-notice-box">
-              <p className="create-notice-title">생성 후에는 이렇게 진행됩니다</p>
-              <ul className="create-notice-list">
-                <li>방이 만들어지면 서버가 방 ID와 참여 코드를 생성합니다.</li>
-                <li>참여자는 생성된 방 안에서 후보 장소를 추가하거나 투표할 수 있습니다.</li>
-                <li>호스트와 팀원 모두 같은 방에서 최종 장소를 함께 정하게 됩니다.</li>
-              </ul>
+            <div className="create-inline-note">
+              생성 후 서버가 방 ID와 참여 코드를 만들고, 바로 방 안에서 후보 장소를 추가할 수 있습니다.
             </div>
 
             {submitPreview && (
