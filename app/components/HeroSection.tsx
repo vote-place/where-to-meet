@@ -16,14 +16,20 @@ export default function HeroSection() {
             팀플, 모임, 약속 장소를 빠르게 정리하는 서비스
           </p>
 
-					<div className="hero-buttons">
-						<Link href="/create" className="cta-button primary hero-button link-button">
-							모임 만들기
-						</Link>
-						<Link href="/join" className="cta-button secondary hero-button link-button">
-							링크로 참여하기
-						</Link>
-					</div>
+          <div className="hero-buttons">
+            <Link
+              href="/create"
+              className="cta-button primary hero-button link-button"
+            >
+              모임 만들기
+            </Link>
+            <Link
+              href="/join"
+              className="cta-button secondary hero-button link-button"
+            >
+              링크로 참여하기
+            </Link>
+          </div>
         </div>
 
         <HeroCarousel />

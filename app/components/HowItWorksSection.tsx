@@ -13,7 +13,9 @@ export default function HowItWorksSection() {
         <div className="step-card">
           <span className="step-number">02</span>
           <h3>참여자가 장소를 추가하거나 선택합니다</h3>
-          <p>링크를 받은 참여자가 원하는 장소를 고르거나 새 장소를 제안합니다.</p>
+          <p>
+            링크를 받은 참여자가 원하는 장소를 고르거나 새 장소를 제안합니다.
+          </p>
         </div>
 
         <div className="step-card">

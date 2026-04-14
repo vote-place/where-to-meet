@@ -41,8 +41,7 @@ const slides: Slide[] = [
       {
         number: "01",
         title: "후보를 한 번에 모으세요",
-        description:
-          "채팅방에 흩어진 장소 의견을 한 곳에 정리할 수 있습니다.",
+        description: "채팅방에 흩어진 장소 의견을 한 곳에 정리할 수 있습니다.",
       },
       {
         number: "02",
@@ -99,8 +98,7 @@ export default function HeroCarousel() {
           className="carousel-arrow left"
           onClick={prevSlide}
           aria-label="이전 슬라이드 보기"
-        >
-        </button>
+        ></button>
 
         <div className="carousel-viewport">
           <div
@@ -160,8 +158,7 @@ export default function HeroCarousel() {
           className="carousel-arrow right"
           onClick={nextSlide}
           aria-label="다음 슬라이드 보기"
-        >
-        </button>
+        ></button>
       </div>
     </section>
   );
