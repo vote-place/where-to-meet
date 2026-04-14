@@ -44,7 +44,7 @@ export default function PlaceSearchInput({
       inputRef.current,
       {
         fields: ["name", "geometry", "formatted_address", "place_id"],
-      }
+      },
     );
 
     const listener = autocomplete.addListener("place_changed", () => {
