@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Header from "../components/Header";
+import { createMeetingRecord } from "../lib/meetingStorage";
 
 type ErrorState = {
   meetingName?: string;
@@ -44,7 +45,7 @@ function formatDeadlineDiff(deadlineValue: string) {
   if (totalMonths >= 1) {
     const remainDays = totalDays % 30;
     const remainHours = Math.floor(
-      (diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+      (diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
     );
 
     if (remainDays > 0) {
@@ -59,7 +60,7 @@ function formatDeadlineDiff(deadlineValue: string) {
 
   if (totalDays >= 1) {
     const remainHours = Math.floor(
-      (diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+      (diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
     );
 
     if (remainHours > 0) {
@@ -135,33 +136,12 @@ export default function CreatePage() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/meetings", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(
-          errorData?.message || "모임 생성에 실패했습니다."
-        );
-      }
-
-      const data = await response.json();
-
-      router.push(`/meeting/${data.roomId}`);
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "알 수 없는 오류가 발생했습니다.";
-
+      const newMeeting = createMeetingRecord(payload);
+      router.push(`/meeting/${newMeeting.roomId}`);
+    } catch {
       setErrors((prev) => ({
         ...prev,
-        submit: message,
+        submit: "모임 생성에 실패했습니다.",
       }));
     } finally {
       setIsSubmitting(false);
@@ -178,16 +158,18 @@ export default function CreatePage() {
             <p className="create-page-eyebrow">CREATE A MEET</p>
             <h1>
               먼저 방을 만들고,
-              <br />
-              그 안에서 장소를 정하세요
+              <br />그 안에서 장소를 정하세요
             </h1>
             <p className="create-page-description">
-              지금은 모임 이름과 마감 시간만 정하면 됩니다.
-              생성된 방 안에서 참여자들과 함께 후보 장소를 모으고 투표를 시작할 수 있습니다.
+              지금은 모임 이름과 마감 시간만 정하면 됩니다. 생성된 방 안에서
+              참여자들과 함께 후보 장소를 모으고 투표를 시작할 수 있습니다.
             </p>
           </div>
 
-          <form className="create-form-card create-form-simple" onSubmit={handleSubmit}>
+          <form
+            className="create-form-card create-form-simple"
+            onSubmit={handleSubmit}
+          >
             <div className="create-form-row">
               <div className="create-form-group">
                 <label htmlFor="meetingName">모임 이름</label>
@@ -245,7 +227,8 @@ export default function CreatePage() {
             </button>
 
             <div className="create-inline-note">
-              생성 후 서버가 방 ID와 참여 코드를 만들고, 바로 방 안에서 후보 장소를 추가할 수 있습니다.
+              생성 후 서버가 방 ID와 참여 코드를 만들고, 바로 방 안에서 후보
+              장소를 추가할 수 있습니다.
             </div>
 
             {errors.submit && (
@@ -254,7 +237,9 @@ export default function CreatePage() {
 
             {submitPreview && (
               <div className="create-submit-preview">
-                <p className="create-submit-preview-title">서버로 보낼 payload 예시</p>
+                <p className="create-submit-preview-title">
+                  서버로 보낼 payload 예시
+                </p>
                 <pre>{submitPreview}</pre>
               </div>
             )}

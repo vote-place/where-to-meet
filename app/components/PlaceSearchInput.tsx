@@ -7,33 +7,21 @@ type SelectedPlace = {
   name: string;
   lat: number;
   lng: number;
-  address?: string;
-  placeId?: string;
 };
 
-type PlaceSearchInputProps = {
-  value: string;
-  onValueChange: (text: string) => void;
+type Props = {
   onPlaceSelect: (place: SelectedPlace) => void;
+  onTextChange?: (text: string) => void;
   placeholder?: string;
 };
 
 export default function PlaceSearchInput({
-  value,
-  onValueChange,
   onPlaceSelect,
+  onTextChange,
   placeholder = "장소 검색",
-}: PlaceSearchInputProps) {
+}: Props) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const placesLibrary = useMapsLibrary("places");
-
-  useEffect(() => {
-    if (!inputRef.current) return;
-
-    if (inputRef.current.value !== value) {
-      inputRef.current.value = value;
-    }
-  }, [value]);
 
   useEffect(() => {
     if (!placesLibrary || !inputRef.current || !window.google?.maps?.places) {
@@ -43,8 +31,8 @@ export default function PlaceSearchInput({
     const autocomplete = new window.google.maps.places.Autocomplete(
       inputRef.current,
       {
-        fields: ["name", "geometry", "formatted_address", "place_id"],
-      },
+        fields: ["name", "geometry", "formatted_address"],
+      }
     );
 
     const listener = autocomplete.addListener("place_changed", () => {
@@ -54,15 +42,17 @@ export default function PlaceSearchInput({
         return;
       }
 
-      const selectedPlace: SelectedPlace = {
+      const selectedPlace = {
         name: place.name || place.formatted_address || "",
         lat: place.geometry.location.lat(),
         lng: place.geometry.location.lng(),
-        address: place.formatted_address || "",
-        placeId: place.place_id || "",
       };
 
-      onValueChange(selectedPlace.name);
+      if (inputRef.current) {
+        inputRef.current.value = selectedPlace.name;
+      }
+
+      onTextChange?.(selectedPlace.name);
       onPlaceSelect(selectedPlace);
     });
 
@@ -71,16 +61,14 @@ export default function PlaceSearchInput({
         window.google.maps.event.removeListener(listener);
       }
     };
-  }, [placesLibrary, onPlaceSelect, onValueChange]);
+  }, [placesLibrary, onPlaceSelect, onTextChange]);
 
   return (
     <input
       ref={inputRef}
-      id="placeSearch"
       type="text"
       placeholder={placeholder}
-      defaultValue={value}
-      onChange={(event) => onValueChange(event.target.value)}
+      onChange={(event) => onTextChange?.(event.target.value)}
     />
   );
 }

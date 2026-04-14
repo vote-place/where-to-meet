@@ -7,6 +7,17 @@ export type ParticipantRecord = {
   joinedAt: string;
 };
 
+export type PlaceRecord = {
+  placeId: string;
+  name: string;
+  lat: number | null;
+  lng: number | null;
+  createdByParticipantId: string;
+  createdByNickname: string;
+  voteParticipantIds: string[];
+  createdAt: string;
+};
+
 export type MeetingRecord = {
   roomId: string;
   joinCode: string;
@@ -14,6 +25,8 @@ export type MeetingRecord = {
   deadlineAt: string;
   createdAt: string;
   participants: ParticipantRecord[];
+  places: PlaceRecord[];
+  finalPlaceId: string | null;
 };
 
 const meetings = new Map<string, MeetingRecord>();
@@ -72,6 +85,8 @@ export async function POST(request: Request) {
       deadlineAt,
       createdAt,
       participants: [],
+      places: [],
+      finalPlaceId: null,
     };
 
     meetings.set(roomId, newMeeting);
