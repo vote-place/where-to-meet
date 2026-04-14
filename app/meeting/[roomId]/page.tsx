@@ -1,13 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AdvancedMarker, Map, useMap } from "@vis.gl/react-google-maps";
+import { AdvancedMarker, Map } from "@vis.gl/react-google-maps";
 import Header from "../../components/Header";
 import GoogleMapsProvider from "../../components/GoogleMapsProvider";
 import PlaceSearchInput from "../../components/PlaceSearchInput";
 import {
   addPlaceToMeeting,
+  clearFinalPlace,
   getMeetingByRoomId,
+  removePlaceFromMeeting,
+  setFinalPlace,
+  toggleVoteForPlace,
   upsertParticipant,
   type MeetingRecord,
 } from "../../lib/meetingStorage";
@@ -29,26 +33,13 @@ type LatLng = {
   lng: number;
 };
 
-function MapMover({ target }: { target: LatLng | null }) {
-  const map = useMap();
-
-  useEffect(() => {
-    if (!map || !target) {
-      return;
-    }
-
-    map.panTo(target);
-    map.setZoom(16);
-  }, [map, target]);
-
-  return null;
-}
-
 function getParticipantStorageKey(roomId: string) {
   return `where-to-meet:participant:${roomId}`;
 }
 
 export default function MeetingPage({ params }: MeetingPageProps) {
+  const defaultCenter = { lat: 37.4979, lng: 127.0276 };
+
   const [roomId, setRoomId] = useState("");
   const [meeting, setMeeting] = useState<MeetingRecord | null>(null);
   const [isLoadingMeeting, setIsLoadingMeeting] = useState(true);
@@ -60,10 +51,12 @@ export default function MeetingPage({ params }: MeetingPageProps) {
 
   const [newPlaceName, setNewPlaceName] = useState("");
   const [placeError, setPlaceError] = useState("");
+  const [voteError, setVoteError] = useState("");
   const [isAddingPlace, setIsAddingPlace] = useState(false);
 
   const [selectedLocation, setSelectedLocation] = useState<LatLng | null>(null);
-  const [mapTarget, setMapTarget] = useState<LatLng | null>(null);
+  const [mapCenter, setMapCenter] = useState<LatLng>(defaultCenter);
+  const [mapZoom, setMapZoom] = useState(13);
   const [copyMessage, setCopyMessage] = useState("");
 
   useEffect(() => {
@@ -109,6 +102,20 @@ export default function MeetingPage({ params }: MeetingPageProps) {
     !!participant &&
     meeting.hostParticipantId === participant.participantId;
 
+  const isClosed = meeting ? !!meeting.finalPlaceId : false;
+
+  const sortedPlaces = meeting
+    ? [...meeting.places].sort((a, b) => {
+        const voteDiff = b.voteParticipantIds.length - a.voteParticipantIds.length;
+
+        if (voteDiff !== 0) {
+          return voteDiff;
+        }
+
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      })
+    : [];
+
   const inviteLink = useMemo(() => {
     if (typeof window === "undefined" || !meeting) {
       return "";
@@ -152,6 +159,21 @@ export default function MeetingPage({ params }: MeetingPageProps) {
     refreshMeeting(roomId);
   }
 
+  function handleMoveToPlace(place: { lat: number | null; lng: number | null }) {
+    if (place.lat == null || place.lng == null) {
+      return;
+    }
+
+    const nextLocation = {
+      lat: place.lat,
+      lng: place.lng,
+    };
+
+    setSelectedLocation(nextLocation);
+    setMapCenter(nextLocation);
+    setMapZoom(16);
+  }
+
   async function handleAddPlace(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -160,23 +182,111 @@ export default function MeetingPage({ params }: MeetingPageProps) {
     }
 
     setPlaceError("");
+    setVoteError("");
+    setIsAddingPlace(true);
 
-    const result = addPlaceToMeeting({
-      roomId,
-      participantId: participant.participantId,
-      name: newPlaceName,
-      lat: selectedLocation?.lat ?? null,
-      lng: selectedLocation?.lng ?? null,
-    });
+    try {
+      const result = addPlaceToMeeting({
+        roomId,
+        participantId: participant.participantId,
+        name: newPlaceName,
+        lat: selectedLocation?.lat ?? null,
+        lng: selectedLocation?.lng ?? null,
+      });
 
-    if (!result.ok) {
-      setPlaceError(result.message);
+      if (!result.ok) {
+        setPlaceError(result.message);
+        return;
+      }
+
+      setNewPlaceName("");
+      setSelectedLocation(null);
+      refreshMeeting(roomId);
+    } finally {
+      setIsAddingPlace(false);
+    }
+  }
+
+  function handleVote(placeId: string) {
+    if (!roomId || !participant) {
       return;
     }
 
-    setNewPlaceName("");
-    setSelectedLocation(null);
-    setMapTarget(null);
+    setVoteError("");
+
+    const result = toggleVoteForPlace({
+      roomId,
+      participantId: participant.participantId,
+      placeId,
+    });
+
+    if (!result.ok) {
+      setVoteError(result.message);
+      return;
+    }
+
+    refreshMeeting(roomId);
+  }
+
+  function handleDeletePlace(placeId: string) {
+    if (!roomId || !participant) {
+      return;
+    }
+
+    setVoteError("");
+
+    const result = removePlaceFromMeeting({
+      roomId,
+      participantId: participant.participantId,
+      placeId,
+    });
+
+    if (!result.ok) {
+      setVoteError(result.message);
+      return;
+    }
+
+    refreshMeeting(roomId);
+  }
+
+  function handleSetFinalPlace(placeId: string) {
+    if (!roomId || !participant) {
+      return;
+    }
+
+    setVoteError("");
+
+    const result = setFinalPlace({
+      roomId,
+      participantId: participant.participantId,
+      placeId,
+    });
+
+    if (!result.ok) {
+      setVoteError(result.message);
+      return;
+    }
+
+    refreshMeeting(roomId);
+  }
+
+  function handleClearFinalPlace() {
+    if (!roomId || !participant) {
+      return;
+    }
+
+    setVoteError("");
+
+    const result = clearFinalPlace({
+      roomId,
+      participantId: participant.participantId,
+    });
+
+    if (!result.ok) {
+      setVoteError(result.message);
+      return;
+    }
+
     refreshMeeting(roomId);
   }
 
@@ -217,9 +327,11 @@ export default function MeetingPage({ params }: MeetingPageProps) {
     setPassword("");
     setAuthError("");
     setPlaceError("");
+    setVoteError("");
     setNewPlaceName("");
     setSelectedLocation(null);
-    setMapTarget(null);
+    setMapCenter(defaultCenter);
+    setMapZoom(13);
     setCopyMessage("");
   }
 
@@ -372,7 +484,8 @@ export default function MeetingPage({ params }: MeetingPageProps) {
 
                         setNewPlaceName(place.name);
                         setSelectedLocation(nextLocation);
-                        setMapTarget(nextLocation);
+                        setMapCenter(nextLocation);
+                        setMapZoom(16);
 
                         if (placeError) {
                           setPlaceError("");
@@ -384,12 +497,22 @@ export default function MeetingPage({ params }: MeetingPageProps) {
 
                   <div className="meeting-map-box-next">
                     <Map
-                      defaultCenter={{ lat: 37.4979, lng: 127.0276 }}
-                      defaultZoom={13}
+                      center={mapCenter}
+                      zoom={mapZoom}
                       gestureHandling="greedy"
                       disableDefaultUI={false}
                       mapId="DEMO_MAP_ID"
                       style={{ width: "100%", height: "100%" }}
+                      onCameraChanged={(event) => {
+                        const nextCenter = event.detail.center;
+                        const nextZoom = event.detail.zoom;
+
+                        setMapCenter({
+                          lat: nextCenter.lat,
+                          lng: nextCenter.lng,
+                        });
+                        setMapZoom(nextZoom);
+                      }}
                       onClick={(event) => {
                         const latLng = event.detail.latLng;
 
@@ -403,15 +526,12 @@ export default function MeetingPage({ params }: MeetingPageProps) {
                         };
 
                         setSelectedLocation(nextLocation);
-                        setMapTarget(nextLocation);
 
                         if (placeError) {
                           setPlaceError("");
                         }
                       }}
                     >
-                      <MapMover target={mapTarget} />
-
                       {selectedLocation && <AdvancedMarker position={selectedLocation} />}
 
                       {meeting.places.map((place) => {
@@ -437,52 +557,182 @@ export default function MeetingPage({ params }: MeetingPageProps) {
                   )}
                 </div>
 
-                <form className="create-form-simple" onSubmit={handleAddPlace}>
-                  <div className="create-form-group">
-                    <label htmlFor="newPlaceName">후보 장소 추가</label>
-                    <input
-                      id="newPlaceName"
-                      type="text"
-                      placeholder="예: 강남역 스타벅스"
-                      value={newPlaceName}
-                      onChange={(event) => {
-                        setNewPlaceName(event.target.value);
-                        if (placeError) {
-                          setPlaceError("");
-                        }
-                      }}
-                    />
-                  </div>
+                {!isClosed && (
+                  <form className="create-form-simple" onSubmit={handleAddPlace}>
+                    <div className="create-form-group">
+                      <label htmlFor="newPlaceName">후보 장소 추가</label>
+                      <input
+                        id="newPlaceName"
+                        type="text"
+                        placeholder="예: 강남역 스타벅스"
+                        value={newPlaceName}
+                        onChange={(event) => {
+                          setNewPlaceName(event.target.value);
+                          if (placeError) {
+                            setPlaceError("");
+                          }
+                        }}
+                      />
+                    </div>
 
-                  {placeError && <p className="create-error-text">{placeError}</p>}
+                    {placeError && <p className="create-error-text">{placeError}</p>}
 
-                  <button type="submit" className="create-submit-button" disabled={isAddingPlace}>
-                    {isAddingPlace ? "추가 중..." : "후보 장소 추가하기"}
-                  </button>
-                </form>
+                    <button
+                      type="submit"
+                      className="create-submit-button"
+                      disabled={isAddingPlace}
+                    >
+                      {isAddingPlace ? "추가 중..." : "후보 장소 추가하기"}
+                    </button>
+                  </form>
+                )}
+
+                {isClosed && (
+                  <p className="create-inline-note">
+                    최종 결정이 완료되어 장소 추가, 투표, 삭제는 비활성화되었습니다.
+                  </p>
+                )}
 
                 <div className="create-submit-preview">
                   <p className="create-submit-preview-title">현재 후보 장소</p>
 
-                  {meeting.places.length === 0 ? (
+                  {voteError && <p className="create-error-text">{voteError}</p>}
+
+                  {meeting.finalPlaceId && (
+                    <div
+                      className="meeting-final-banner clickable-place-card"
+                      onClick={() => {
+                        const finalPlace = meeting.places.find(
+                          (place) => place.placeId === meeting.finalPlaceId
+                        );
+
+                        if (finalPlace) {
+                          handleMoveToPlace(finalPlace);
+                        }
+                      }}
+                    >
+                      <p className="meeting-final-label">최종 결정된 장소</p>
+                      <p className="meeting-final-name">
+                        {
+                          meeting.places.find(
+                            (place) => place.placeId === meeting.finalPlaceId
+                          )?.name
+                        }
+                      </p>
+
+                      {isHost && (
+                        <button
+                          type="button"
+                          className="cta-button secondary meeting-inline-button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleClearFinalPlace();
+                          }}
+                        >
+                          최종 결정 해제
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {sortedPlaces.length === 0 ? (
                     <p className="create-page-description">
                       아직 추가된 후보 장소가 없습니다.
                     </p>
                   ) : (
                     <ul className="meeting-place-list-simple">
-                      {meeting.places.map((place) => (
-                        <li key={place.placeId} className="meeting-place-item-simple">
-                          <div>
-                            <strong>{place.name}</strong>
-                            <p className="meeting-place-meta">
-                              추가한 사람: {place.createdByNickname}
-                            </p>
-                          </div>
-                          <span className="meeting-vote-count">
-                            {place.voteParticipantIds.length}표
-                          </span>
-                        </li>
-                      ))}
+                      {sortedPlaces.map((place) => {
+                        const hasVoted = participant
+                          ? place.voteParticipantIds.includes(participant.participantId)
+                          : false;
+
+                        const isFinal = meeting.finalPlaceId === place.placeId;
+
+                        const voterNames = place.voteParticipantIds
+                          .map((participantId) => {
+                            const found = meeting.participants.find(
+                              (item) => item.participantId === participantId
+                            );
+                            return found?.nickname ?? null;
+                          })
+                          .filter(Boolean)
+                          .join(", ");
+
+                        const canDelete =
+                          !!participant &&
+                          place.createdByParticipantId === participant.participantId &&
+                          !isClosed;
+
+                        return (
+                          <li
+                            key={place.placeId}
+                            className={`meeting-place-item-simple clickable-place-card ${
+                              isFinal ? "is-final" : ""
+                            }`}
+                            onClick={() => handleMoveToPlace(place)}
+                          >
+                            <div className="meeting-place-main">
+                              <div>
+                                <strong>{place.name}</strong>
+                                <p className="meeting-place-meta">
+                                  추가한 사람: {place.createdByNickname}
+                                </p>
+                                <p className="meeting-place-meta">
+                                  투표한 사람: {voterNames || "아직 없음"}
+                                </p>
+                                {isFinal && <p className="meeting-final-chip">최종 확정됨</p>}
+                              </div>
+
+                              <span className="meeting-vote-count">
+                                {place.voteParticipantIds.length}표
+                              </span>
+                            </div>
+
+                            {!isClosed && (
+                              <div className="meeting-place-actions">
+                                <button
+                                  type="button"
+                                  className={`cta-button ${
+                                    hasVoted ? "secondary" : "primary"
+                                  } meeting-inline-button`}
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    handleVote(place.placeId);
+                                  }}
+                                >
+                                  {hasVoted ? "투표 취소" : "투표하기"}
+                                </button>
+
+                                {canDelete && (
+                                  <button
+                                    type="button"
+                                    className="cta-button secondary meeting-inline-button meeting-delete-button"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      handleDeletePlace(place.placeId);
+                                    }}
+                                  >
+                                    장소 삭제
+                                  </button>
+                                )}
+
+                                {isHost && !isFinal && (
+                                  <button
+                                    type="button"
+                                    className="cta-button secondary meeting-inline-button"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      handleSetFinalPlace(place.placeId);
+                                    }}
+                                  >
+                                    최종 결정
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </li>
+                        );
+                      })}
                     </ul>
                   )}
                 </div>

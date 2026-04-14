@@ -21,10 +21,26 @@ export default function PlaceSearchInput({
   placeholder = "장소 검색",
 }: Props) {
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const onPlaceSelectRef = useRef(onPlaceSelect);
+  const onTextChangeRef = useRef(onTextChange);
+
   const placesLibrary = useMapsLibrary("places");
 
   useEffect(() => {
+    onPlaceSelectRef.current = onPlaceSelect;
+  }, [onPlaceSelect]);
+
+  useEffect(() => {
+    onTextChangeRef.current = onTextChange;
+  }, [onTextChange]);
+
+  useEffect(() => {
     if (!placesLibrary || !inputRef.current || !window.google?.maps?.places) {
+      return;
+    }
+
+    if (autocompleteRef.current) {
       return;
     }
 
@@ -32,8 +48,10 @@ export default function PlaceSearchInput({
       inputRef.current,
       {
         fields: ["name", "geometry", "formatted_address"],
-      }
+      },
     );
+
+    autocompleteRef.current = autocomplete;
 
     const listener = autocomplete.addListener("place_changed", () => {
       const place = autocomplete.getPlace();
@@ -52,23 +70,24 @@ export default function PlaceSearchInput({
         inputRef.current.value = selectedPlace.name;
       }
 
-      onTextChange?.(selectedPlace.name);
-      onPlaceSelect(selectedPlace);
+      onTextChangeRef.current?.(selectedPlace.name);
+      onPlaceSelectRef.current(selectedPlace);
     });
 
     return () => {
-      if (listener) {
-        window.google.maps.event.removeListener(listener);
-      }
+      window.google.maps.event.removeListener(listener);
+      autocompleteRef.current = null;
     };
-  }, [placesLibrary, onPlaceSelect, onTextChange]);
+  }, [placesLibrary]);
 
   return (
     <input
       ref={inputRef}
       type="text"
       placeholder={placeholder}
-      onChange={(event) => onTextChange?.(event.target.value)}
+      onChange={(event) => {
+        onTextChangeRef.current?.(event.target.value);
+      }}
     />
   );
 }
