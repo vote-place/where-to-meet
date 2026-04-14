@@ -1,54 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { APIProvider, AdvancedMarker, Map, useMap } from "@vis.gl/react-google-maps";
+import { useState } from "react";
 import Header from "../components/Header";
-import PlaceSearchInput from "../components/PlaceSearchInput";
-
-type LatLng = {
-  lat: number;
-  lng: number;
-};
-
-type SelectedPlace = {
-  name: string;
-  lat: number;
-  lng: number;
-  address?: string;
-  placeId?: string;
-};
-
-type CandidatePlace = {
-  name: string;
-  lat: number;
-  lng: number;
-  address?: string;
-  placeId?: string;
-};
 
 type ErrorState = {
   meetingName?: string;
   deadline?: string;
-  place?: string;
-  places?: string;
 };
-
-function MapMover({ target }: { target: LatLng | null }) {
-  const map = useMap();
-
-  useEffect(() => {
-    if (!map || !target) return;
-
-    map.panTo(target);
-    map.setZoom(17);
-  }, [map, target]);
-
-  return null;
-}
 
 function getDefaultDeadlineValue() {
   const now = new Date();
-  now.setHours(now.getHours() + 2);
+  now.setMinutes(now.getMinutes() + 30);
 
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, "0");
@@ -59,131 +21,72 @@ function getDefaultDeadlineValue() {
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
-export default function CreatePage() {
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
-  const hasApiKey = useMemo(() => apiKey.trim() !== "", [apiKey]);
+function formatDeadlineDiff(deadlineValue: string) {
+  if (!deadlineValue) {
+    return "";
+  }
 
+  const now = new Date();
+  const deadlineDate = new Date(deadlineValue);
+  const diffMs = deadlineDate.getTime() - now.getTime();
+
+  if (Number.isNaN(deadlineDate.getTime()) || diffMs <= 0) {
+    return "현재 시각보다 이후의 시간을 선택해주세요.";
+  }
+
+  const totalMinutes = Math.floor(diffMs / (1000 * 60));
+  const totalHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const totalDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const totalMonths = Math.floor(totalDays / 30);
+
+  if (totalMonths >= 1) {
+    const remainDays = totalDays % 30;
+    const remainHours = Math.floor(
+      (diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+    );
+
+    if (remainDays > 0) {
+      if (remainHours > 0) {
+        return `약 ${totalMonths}개월 ${remainDays}일 ${remainHours}시간 뒤에 투표가 종료됩니다.`;
+      }
+      return `약 ${totalMonths}개월 ${remainDays}일 뒤에 투표가 종료됩니다.`;
+    }
+
+    return `약 ${totalMonths}개월 뒤에 투표가 종료됩니다.`;
+  }
+
+  if (totalDays >= 1) {
+    const remainHours = Math.floor(
+      (diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+    );
+
+    if (remainHours > 0) {
+      return `약 ${totalDays}일 ${remainHours}시간 뒤에 투표가 종료됩니다.`;
+    }
+
+    return `약 ${totalDays}일 뒤에 투표가 종료됩니다.`;
+  }
+
+  if (totalHours >= 1) {
+    const remainMinutes = totalMinutes % 60;
+
+    if (remainMinutes > 0) {
+      return `약 ${totalHours}시간 ${remainMinutes}분 뒤에 투표가 종료됩니다.`;
+    }
+
+    return `약 ${totalHours}시간 뒤에 투표가 종료됩니다.`;
+  }
+
+  return `약 ${totalMinutes}분 뒤에 투표가 종료됩니다.`;
+}
+
+export default function CreatePage() {
   const [meetingName, setMeetingName] = useState("");
   const [deadline, setDeadline] = useState(getDefaultDeadlineValue());
-
-  const [searchText, setSearchText] = useState("");
-  const [selectedPlace, setSelectedPlace] = useState<SelectedPlace | null>(null);
-  const [places, setPlaces] = useState<CandidatePlace[]>([]);
-
-  const [selectedLocation, setSelectedLocation] = useState<LatLng | null>(null);
-  const [mapTarget, setMapTarget] = useState<LatLng | null>(null);
-
   const [errors, setErrors] = useState<ErrorState>({});
   const [submitPreview, setSubmitPreview] = useState("");
 
-  function clearPlaceError() {
-    setErrors((prev) => ({
-      ...prev,
-      place: "",
-      places: "",
-    }));
-  }
-
-  function handleSelectPlace(place: SelectedPlace) {
-    const nextLocation = {
-      lat: place.lat,
-      lng: place.lng,
-    };
-
-    setSearchText(place.name);
-    setSelectedPlace(place);
-    setSelectedLocation(nextLocation);
-    setMapTarget(nextLocation);
-    clearPlaceError();
-  }
-
-  function handleMapClick(latLng: LatLng) {
-    setSelectedLocation(latLng);
-    setMapTarget(latLng);
-
-    setSelectedPlace((prev) => ({
-      name: searchText.trim() || prev?.name || "",
-      lat: latLng.lat,
-      lng: latLng.lng,
-      address: prev?.address || "",
-      placeId: prev?.placeId || "",
-    }));
-
-    clearPlaceError();
-  }
-
-  function handleAddPlace() {
-    const trimmedName = searchText.trim();
-
-    if (!selectedLocation) {
-      setErrors((prev) => ({
-        ...prev,
-        place: "먼저 자동완성으로 장소를 선택하거나 지도에서 위치를 클릭해주세요.",
-      }));
-      return;
-    }
-
-    if (trimmedName === "") {
-      setErrors((prev) => ({
-        ...prev,
-        place: "장소 이름을 입력하거나 자동완성 항목을 선택해주세요.",
-      }));
-      return;
-    }
-
-    const isDuplicate = places.some(
-      (place) =>
-        place.name.trim().toLowerCase() === trimmedName.toLowerCase() &&
-        Math.abs(place.lat - selectedLocation.lat) < 0.000001 &&
-        Math.abs(place.lng - selectedLocation.lng) < 0.000001
-    );
-
-    if (isDuplicate) {
-      setErrors((prev) => ({
-        ...prev,
-        place: "이미 추가된 장소입니다.",
-      }));
-      return;
-    }
-
-    const nextPlace: CandidatePlace = {
-      name: trimmedName,
-      lat: selectedLocation.lat,
-      lng: selectedLocation.lng,
-      address: selectedPlace?.address ?? "",
-      placeId: selectedPlace?.placeId ?? "",
-    };
-
-    setPlaces((prev) => [...prev, nextPlace]);
-    setSearchText("");
-    setSelectedPlace(null);
-    setSelectedLocation(null);
-    setMapTarget(null);
-    setSubmitPreview("");
-
-    setErrors((prev) => ({
-      ...prev,
-      place: "",
-      places: "",
-    }));
-  }
-
-  function handleDeletePlace(indexToDelete: number) {
-    const nextPlaces = places.filter((_, index) => index !== indexToDelete);
-    setPlaces(nextPlaces);
-
-    if (nextPlaces.length === 0) {
-      setErrors((prev) => ({
-        ...prev,
-        places: "후보 장소를 최소 1개 이상 추가해야 합니다.",
-      }));
-    } else {
-      setErrors((prev) => ({
-        ...prev,
-        places: "",
-      }));
-    }
-  }
+  const deadlineGuideText = formatDeadlineDiff(deadline);
 
   function validateForm() {
     const nextErrors: ErrorState = {};
@@ -204,10 +107,6 @@ export default function CreatePage() {
       }
     }
 
-    if (places.length === 0) {
-      nextErrors.places = "후보 장소를 최소 1개 이상 추가해야 합니다.";
-    }
-
     return nextErrors;
   }
 
@@ -225,14 +124,6 @@ export default function CreatePage() {
     const payload = {
       title: meetingName.trim(),
       deadlineAt: new Date(deadline).toISOString(),
-      timeZone: "Asia/Seoul",
-      places: places.map((place) => ({
-        name: place.name,
-        address: place.address ?? "",
-        latitude: place.lat,
-        longitude: place.lng,
-        placeId: place.placeId ?? "",
-      })),
     };
 
     setSubmitPreview(JSON.stringify(payload, null, 2));
@@ -245,7 +136,7 @@ export default function CreatePage() {
     // });
     //
     // if (!response.ok) {
-    //   throw new Error("방 생성에 실패했습니다.");
+    //   throw new Error("모임 생성에 실패했습니다.");
     // }
     //
     // const data = await response.json();
@@ -260,303 +151,79 @@ export default function CreatePage() {
         <section className="create-shell">
           <div className="create-page-heading">
             <p className="create-page-eyebrow">CREATE A MEET</p>
-            <h1>모임 만들기</h1>
+            <h1>
+              모임을 만들고,
+              <br />
+              방 안에서 함께 장소를 모으세요
+            </h1>
             <p className="create-page-description">
-              모임 이름과 마감 시간, 후보 장소를 등록해 빠르게 장소 투표를 시작하세요.
+              지금은 모임 이름과 투표 마감 시간만 설정하면 됩니다.
+              <br />
+              후보 장소는 방이 생성된 뒤 참여자들과 함께 자유롭게 추가할 수 있습니다.
             </p>
           </div>
 
-          {hasApiKey ? (
-            <APIProvider apiKey={apiKey} libraries={["places"]} region="KR">
-              <form className="create-form-card" onSubmit={handleSubmit}>
-                <div className="create-form-grid">
-                  <div className="create-form-left">
-                    <div className="create-form-group">
-                      <label htmlFor="meetingName">모임 이름</label>
-                      <input
-                        id="meetingName"
-                        type="text"
-                        placeholder="예: 3학년 팀플 회의"
-                        value={meetingName}
-                        onChange={(event) => {
-                          setMeetingName(event.target.value);
-                          if (errors.meetingName) {
-                            setErrors((prev) => ({ ...prev, meetingName: "" }));
-                          }
-                        }}
-                      />
-                      {errors.meetingName && (
-                        <p className="create-error-text">{errors.meetingName}</p>
-                      )}
-                    </div>
-
-                    <div className="create-form-group">
-                      <label htmlFor="deadline">투표 마감 일시</label>
-                      <input
-                        id="deadline"
-                        type="datetime-local"
-                        value={deadline}
-                        onChange={(event) => {
-                          setDeadline(event.target.value);
-                          if (errors.deadline) {
-                            setErrors((prev) => ({ ...prev, deadline: "" }));
-                          }
-                        }}
-                      />
-                      {errors.deadline && (
-                        <p className="create-error-text">{errors.deadline}</p>
-                      )}
-                    </div>
-
-                    <div className="create-form-group">
-                      <label htmlFor="placeSearch">장소 검색</label>
-                      <PlaceSearchInput
-                        value={searchText}
-                        onValueChange={(text) => {
-                          setSearchText(text);
-                          clearPlaceError();
-                        }}
-                        onPlaceSelect={handleSelectPlace}
-                        placeholder="예: 국민대학교앞"
-                      />
-                      {errors.place && <p className="create-error-text">{errors.place}</p>}
-                    </div>
-
-                    <div className="create-form-group">
-                      <button
-                        type="button"
-                        className="create-add-place-button"
-                        onClick={handleAddPlace}
-                      >
-                        선택한 장소 후보에 추가
-                      </button>
-                    </div>
-
-                    <div className="create-form-group">
-                      <label>현재 후보 장소</label>
-
-                      {places.length === 0 ? (
-                        <p className="create-empty-message">아직 추가된 장소가 없습니다.</p>
-                      ) : (
-                        <ul className="create-place-list">
-                          {places.map((place, index) => (
-                            <li key={`${place.name}-${index}`} className="create-place-item">
-                              <div className="create-place-info">
-                                <strong>{place.name}</strong>
-                                <span>
-                                  {place.lat.toFixed(5)}, {place.lng.toFixed(5)}
-                                </span>
-                                {place.address ? <span>{place.address}</span> : null}
-                              </div>
-
-                              <button
-                                type="button"
-                                className="create-delete-button"
-                                onClick={() => handleDeletePlace(index)}
-                              >
-                                삭제
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-
-                      {errors.places && (
-                        <p className="create-error-text">{errors.places}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="create-form-right">
-                    <div className="create-map-section">
-                      <div className="create-map-header">
-                        <h2>지도에서 위치 선택</h2>
-                        <p>
-                          자동완성으로 장소를 선택하거나 지도를 직접 클릭해 후보 위치를 정할 수 있습니다.
-                        </p>
-                      </div>
-
-                      <div className="create-map-box">
-                        <Map
-                          defaultCenter={{ lat: 37.6109, lng: 126.9975 }}
-                          defaultZoom={14}
-                          gestureHandling="greedy"
-                          disableDefaultUI={false}
-                          mapId="DEMO_MAP_ID"
-                          style={{ width: "100%", height: "100%" }}
-                          onClick={(event) => {
-                            const latLng = event.detail.latLng;
-                            if (!latLng) return;
-
-                            handleMapClick({
-                              lat: latLng.lat,
-                              lng: latLng.lng,
-                            });
-                          }}
-                        >
-                          <MapMover target={mapTarget} />
-
-                          {selectedLocation && <AdvancedMarker position={selectedLocation} />}
-
-                          {places.map((place, index) => (
-                            <AdvancedMarker
-                              key={`${place.name}-${index}`}
-                              position={{ lat: place.lat, lng: place.lng }}
-                            />
-                          ))}
-                        </Map>
-                      </div>
-
-                      {selectedLocation && (
-                        <p className="create-selected-location-text">
-                          선택한 위치: {selectedLocation.lat.toFixed(5)},{" "}
-                          {selectedLocation.lng.toFixed(5)}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <button type="submit" className="create-submit-button">
-                  모임 생성하기
-                </button>
-
-                {submitPreview && (
-                  <div className="create-submit-preview">
-                    <p className="create-submit-preview-title">서버로 보낼 payload 예시</p>
-                    <pre>{submitPreview}</pre>
-                  </div>
+          <form className="create-form-card create-form-simple" onSubmit={handleSubmit}>
+            <div className="create-form-row">
+              <div className="create-form-group">
+                <label htmlFor="meetingName">모임 이름</label>
+                <input
+                  id="meetingName"
+                  type="text"
+                  placeholder="예: 3학년 팀플 회의"
+                  value={meetingName}
+                  onChange={(event) => {
+                    setMeetingName(event.target.value);
+                    if (errors.meetingName) {
+                      setErrors((prev) => ({ ...prev, meetingName: "" }));
+                    }
+                  }}
+                />
+                {errors.meetingName && (
+                  <p className="create-error-text">{errors.meetingName}</p>
                 )}
-              </form>
-            </APIProvider>
-          ) : (
-            <form className="create-form-card" onSubmit={handleSubmit}>
-              <div className="create-form-grid">
-                <div className="create-form-left">
-                  <div className="create-form-group">
-                    <label htmlFor="meetingName">모임 이름</label>
-                    <input
-                      id="meetingName"
-                      type="text"
-                      placeholder="예: 3학년 팀플 회의"
-                      value={meetingName}
-                      onChange={(event) => {
-                        setMeetingName(event.target.value);
-                        if (errors.meetingName) {
-                          setErrors((prev) => ({ ...prev, meetingName: "" }));
-                        }
-                      }}
-                    />
-                    {errors.meetingName && (
-                      <p className="create-error-text">{errors.meetingName}</p>
-                    )}
-                  </div>
-
-                  <div className="create-form-group">
-                    <label htmlFor="deadline">투표 마감 일시</label>
-                    <input
-                      id="deadline"
-                      type="datetime-local"
-                      value={deadline}
-                      onChange={(event) => {
-                        setDeadline(event.target.value);
-                        if (errors.deadline) {
-                          setErrors((prev) => ({ ...prev, deadline: "" }));
-                        }
-                      }}
-                    />
-                    {errors.deadline && (
-                      <p className="create-error-text">{errors.deadline}</p>
-                    )}
-                  </div>
-
-                  <div className="create-form-group">
-                    <label htmlFor="placeSearchFallback">장소 검색</label>
-                    <input
-                      id="placeSearchFallback"
-                      type="text"
-                      placeholder="NEXT_PUBLIC_GOOGLE_MAPS_API_KEY를 설정하면 검색이 활성화됩니다."
-                      value={searchText}
-                      onChange={(event) => {
-                        setSearchText(event.target.value);
-                        clearPlaceError();
-                      }}
-                    />
-                    {errors.place && <p className="create-error-text">{errors.place}</p>}
-                  </div>
-
-                  <div className="create-form-group">
-                    <button
-                      type="button"
-                      className="create-add-place-button"
-                      onClick={handleAddPlace}
-                    >
-                      선택한 장소 후보에 추가
-                    </button>
-                  </div>
-
-                  <div className="create-form-group">
-                    <label>현재 후보 장소</label>
-                    {places.length === 0 ? (
-                      <p className="create-empty-message">아직 추가된 장소가 없습니다.</p>
-                    ) : (
-                      <ul className="create-place-list">
-                        {places.map((place, index) => (
-                          <li key={`${place.name}-${index}`} className="create-place-item">
-                            <div className="create-place-info">
-                              <strong>{place.name}</strong>
-                              <span>
-                                {place.lat.toFixed(5)}, {place.lng.toFixed(5)}
-                              </span>
-                              {place.address ? <span>{place.address}</span> : null}
-                            </div>
-
-                            <button
-                              type="button"
-                              className="create-delete-button"
-                              onClick={() => handleDeletePlace(index)}
-                            >
-                              삭제
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    {errors.places && <p className="create-error-text">{errors.places}</p>}
-                  </div>
-                </div>
-
-                <div className="create-form-right">
-                  <div className="create-map-section">
-                    <div className="create-map-header">
-                      <h2>지도</h2>
-                      <p>Google Maps API Key를 설정하면 지도와 자동완성이 활성화됩니다.</p>
-                    </div>
-
-                    <div className="create-map-box">
-                      <div className="create-map-fallback">
-                        <p>지도를 표시하려면 Google Maps API Key가 필요합니다.</p>
-                        <p className="create-map-fallback-code">
-                          NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
               </div>
 
-              <button type="submit" className="create-submit-button">
-                모임 생성하기
-              </button>
+              <div className="create-form-group">
+                <label htmlFor="deadline">투표 마감 일시</label>
+                <input
+                  id="deadline"
+                  type="datetime-local"
+                  value={deadline}
+                  onChange={(event) => {
+                    setDeadline(event.target.value);
+                    if (errors.deadline) {
+                      setErrors((prev) => ({ ...prev, deadline: "" }));
+                    }
+                  }}
+                />
+                <p className="create-help-text">{deadlineGuideText}</p>
+                {errors.deadline && (
+                  <p className="create-error-text">{errors.deadline}</p>
+                )}
+              </div>
+            </div>
 
-              {submitPreview && (
-                <div className="create-submit-preview">
-                  <p className="create-submit-preview-title">서버로 보낼 payload 예시</p>
-                  <pre>{submitPreview}</pre>
-                </div>
-              )}
-            </form>
-          )}
+            <button type="submit" className="create-submit-button">
+              모임 생성하기
+            </button>
+
+            <div className="create-notice-box">
+              <p className="create-notice-title">생성 후에는 이렇게 진행됩니다</p>
+              <ul className="create-notice-list">
+                <li>방이 만들어지면 서버가 방 ID와 참여 코드를 생성합니다.</li>
+                <li>참여자는 생성된 방 안에서 후보 장소를 추가하거나 투표할 수 있습니다.</li>
+                <li>호스트와 팀원 모두 같은 방에서 최종 장소를 함께 정하게 됩니다.</li>
+              </ul>
+            </div>
+
+            {submitPreview && (
+              <div className="create-submit-preview">
+                <p className="create-submit-preview-title">서버로 보낼 payload 예시</p>
+                <pre>{submitPreview}</pre>
+              </div>
+            )}
+          </form>
         </section>
       </main>
     </div>
