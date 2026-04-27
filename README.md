@@ -1,8 +1,30 @@
-## 환경설정
+## Tech Stack
+
+### Frontend
+- Next.js 16
+- React 19
+- TypeScript
+
+### Styling
+- Tailwind CSS 4
+
+### Backend
+- Next.js Route Handlers (API)
+
+### Database
+- MySQL (mysql2)
+
+### Map / External API
+- @vis.gl/react-google-maps
+
+### Code Quality
+- ESLint
+
+
+##  환경설정
 
 ### .env
-```bash
-PORT=
+```shell
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=
 
 ## Database config
@@ -11,8 +33,6 @@ DB_USER=
 DB_PASSWORD=
 DB_SCHEMA=
 DB_PORT=
-
-
 ```
 
 ## 시작하기
