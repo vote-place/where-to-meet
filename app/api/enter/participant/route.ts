@@ -1,4 +1,3 @@
-import { EnterRequest } from "@/types/participant";
 import { isEnterRequest } from "@/types/participant";
 
 export async function POST(req: Request) {
@@ -7,5 +6,6 @@ export async function POST(req: Request) {
         return new Response("Invalid request body", { status: 400 });
     }
 
-    const { groupId, userId, meetingId } = body;
+    const { groupId, meetingId } = body;
+    // 비즈니스 로직을 관리하는 클래스를 만들자
 }
