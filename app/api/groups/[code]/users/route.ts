@@ -9,7 +9,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ code
     const users = await userService.findByGroup(group);
 
     return NextResponse.json({ users })
-
 }
 
 
@@ -20,23 +19,35 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ cod
     if (!isUserRequest(userRequest)) {
         return NextResponse.json({}, { status: 400 })
     }
-    const group = await groupService.findByCode(code);
-    
 
+    const isExist = await userService.isExist(userRequest.name, code)
+    if (!isExist) {
+        const group = await groupService.findByCode(code);
+        await userService.save(userRequest, group);
+    }
 
-
-    const result = await userService.save(userRequest, group);
-
+    const user = await userService.findByCodeAndNameAndPassword(code, userRequest.name, userRequest.password);
+    if (!user) {
+        return NextResponse.json({}, { status: 500 })
+    }
 
     const headers = new Headers();
     headers.set(
         'Set-Cookie',
-        `groupCode=${code}; Path=/; Max-Age=${60 * 60 * 24 * 14}; HttpOnly;`,
+        `groupCode=${user.groupCode}; Path=/; Max-Age=${60 * 60 * 24 * 14}; HttpOnly;`,
     );
     headers.append(
         'Set-Cookie',
-        `userId=${result.id}; Path=/; Max-Age=${60 * 60}; HttpOnly;`,
+        `id=${user.id}; Path=/; Max-Age=${60 * 60}; HttpOnly;`,
+    );
+    headers.append(
+        'Set-Cookie',
+        `name=${user.name}; Path=/; Max-Age=${60 * 60}; HttpOnly;`,
+    );
+    headers.append(
+        'Set-Cookie',
+        `password=${user.password}; Path=/; Max-Age=${60 * 60}; HttpOnly;`,
     );
 
-    return NextResponse.json(result, { headers });
+    return NextResponse.json(user, { headers });
 }
