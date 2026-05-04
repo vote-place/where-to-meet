@@ -39,12 +39,34 @@ async function findById(id: number) {
 
 async function findByGroupCode(code: string) {
     const [rows, fields] = await pool.query<UserRow[]>("SELECT * FROM `user` WHERE group_code = ?", [code]);
-    console.log(rows)
     const result = rows.map(toUser);
-    console.log(result)
     return result;
 }
 
-const userRepository = { save, findById, findByGroupCode };
+async function findByNameAndGroupCode(code: string, name: string) {
+    try {
+        const [[row], fields] = await pool.query<UserRow[]>("SELECT * FROM `user` WHERE name = ? AND group_code = ?", [name, code]);
+        const result = toUser(row);
+        return result;
+    }
+    catch (e) {
+        // console.error(e);
+        return null;
+    }
+}
+
+async function findByCodeAndNameAndPassword(code: string, name: string, password: string) {
+    try {
+        const [[row], fields] = await pool.query<UserRow[]>("SELECT * FROM `user` WHERE name = ? AND group_code = ? AND password = ?", [name, code, password]);
+        const result = toUser(row);
+        return result;
+    }
+    catch (e) {
+        // console.error(e);
+        return null;
+    }
+}
+
+const userRepository = { save, findById, findByGroupCode, findByNameAndGroupCode, findByCodeAndNameAndPassword };
 
 export default userRepository;

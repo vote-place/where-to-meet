@@ -18,9 +18,19 @@ function findByGroup(group: Group) {
     return userRepository.findByGroupCode(group.code);
 }
 
+async function isExist(code: string, name: string): Promise<boolean> {
+    const result = await userRepository.findByNameAndGroupCode(name, code)
+    console.log(result)
+    return Boolean(result)
+}
+
+async function findByCodeAndNameAndPassword(code: string, name: string, password: string) {
+    const result = await userRepository.findByCodeAndNameAndPassword(code, name, password)
+    return result
+}
 
 
 
-const userService = { save, findById, findByGroup }
+const userService = { save, findById, findByGroup, isExist, findByCodeAndNameAndPassword }
 
 export default userService;
