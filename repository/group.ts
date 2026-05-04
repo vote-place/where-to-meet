@@ -1,6 +1,6 @@
 import pool from "@/config/databse/dbConnect";
 import { Group } from "@/domain/group/group";
-import { GroupRequest } from "@/domain/group/groupRequest";
+import { GroupRequest } from "@/domain/participant/groupRequest";
 import { generateCode } from "@/util/generateCode";
 import { FieldPacket, ResultSetHeader, RowDataPacket } from "mysql2";
 

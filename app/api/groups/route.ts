@@ -1,4 +1,4 @@
-import { isGroupRequest } from "@/domain/group/groupRequest";
+import { isGroupRequest } from "@/domain/participant/groupRequest";
 import groupService from "@/service/group";
 import { NextRequest, NextResponse } from "next/server";
 

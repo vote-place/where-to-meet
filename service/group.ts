@@ -1,4 +1,4 @@
-import { GroupRequest } from "@/domain/group/groupRequest";
+import { GroupRequest } from "@/domain/participant/groupRequest";
 import groupRepository from "@/repository/group";
 
 
