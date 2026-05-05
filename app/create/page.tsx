@@ -1,11 +1,14 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Header from "../components/Header";
+import { createGroup } from "../lib/api/groupApi";
 
 type ErrorState = {
   meetingName?: string;
   deadline?: string;
+  submit?: string;
 };
 
 function getDefaultDeadlineValue() {
@@ -49,6 +52,7 @@ function formatDeadlineDiff(deadlineValue: string) {
       if (remainHours > 0) {
         return `약 ${totalMonths}개월 ${remainDays}일 ${remainHours}시간 뒤에 투표가 종료됩니다.`;
       }
+
       return `약 ${totalMonths}개월 ${remainDays}일 뒤에 투표가 종료됩니다.`;
     }
 
@@ -81,10 +85,13 @@ function formatDeadlineDiff(deadlineValue: string) {
 }
 
 export default function CreatePage() {
+  const router = useRouter();
+
   const [meetingName, setMeetingName] = useState("");
   const [deadline, setDeadline] = useState(getDefaultDeadlineValue());
   const [errors, setErrors] = useState<ErrorState>({});
   const [submitPreview, setSubmitPreview] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const deadlineGuideText = formatDeadlineDiff(deadline);
 
@@ -122,25 +129,25 @@ export default function CreatePage() {
     }
 
     const payload = {
-      title: meetingName.trim(),
-      deadlineAt: new Date(deadline).toISOString(),
+      name: meetingName.trim(),
     };
 
     setSubmitPreview(JSON.stringify(payload, null, 2));
+    setIsSubmitting(true);
 
-    // 실제 서버 연결 예시
-    // const response = await fetch("/api/meetings", {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify(payload),
-    // });
-    //
-    // if (!response.ok) {
-    //   throw new Error("모임 생성에 실패했습니다.");
-    // }
-    //
-    // const data = await response.json();
-    // router.push(`/meeting/${data.id}`);
+    try {
+      const group = await createGroup(payload);
+      router.push(`/meeting/${group.code}`);
+    } catch (error) {
+      setErrors({
+        submit:
+          error instanceof Error
+            ? error.message
+            : "모임 생성 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -175,8 +182,13 @@ export default function CreatePage() {
                   value={meetingName}
                   onChange={(event) => {
                     setMeetingName(event.target.value);
-                    if (errors.meetingName) {
-                      setErrors((prev) => ({ ...prev, meetingName: "" }));
+
+                    if (errors.meetingName || errors.submit) {
+                      setErrors((prev) => ({
+                        ...prev,
+                        meetingName: "",
+                        submit: "",
+                      }));
                     }
                   }}
                 />
@@ -193,8 +205,13 @@ export default function CreatePage() {
                   value={deadline}
                   onChange={(event) => {
                     setDeadline(event.target.value);
-                    if (errors.deadline) {
-                      setErrors((prev) => ({ ...prev, deadline: "" }));
+
+                    if (errors.deadline || errors.submit) {
+                      setErrors((prev) => ({
+                        ...prev,
+                        deadline: "",
+                        submit: "",
+                      }));
                     }
                   }}
                 />
@@ -205,19 +222,27 @@ export default function CreatePage() {
               </div>
             </div>
 
-            <button type="submit" className="create-submit-button">
-              모임 생성하기
+            {errors.submit && (
+              <p className="create-error-text">{errors.submit}</p>
+            )}
+
+            <button
+              type="submit"
+              className="create-submit-button"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "모임 생성 중..." : "모임 생성하기"}
             </button>
 
             <div className="create-inline-note">
-              생성 후 서버가 방 ID와 참여 코드를 만들고, 바로 방 안에서 후보
-              장소를 추가할 수 있습니다.
+              생성 후 서버가 참여 코드를 만들고, 바로 방 안에서 후보 장소를
+              추가할 수 있습니다.
             </div>
 
             {submitPreview && (
               <div className="create-submit-preview">
                 <p className="create-submit-preview-title">
-                  서버로 보낼 payload 예시
+                  서버로 보낼 payload
                 </p>
                 <pre>{submitPreview}</pre>
               </div>
