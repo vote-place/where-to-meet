@@ -891,8 +891,10 @@ export default function MeetingPage({ params }: MeetingPageProps) {
                           <div className="create-form-group">
                             <label>장소 검색</label>
                             <PlaceSearchInput
-                              onTextChange={(text) => {
+                              value={newPlaceName}
+                              onValueChange={(text) => {
                                 setNewPlaceName(text);
+
                                 if (placeError) {
                                   setPlaceError("");
                                 }
@@ -902,10 +904,12 @@ export default function MeetingPage({ params }: MeetingPageProps) {
                                   lat: place.lat,
                                   lng: place.lng,
                                 };
+
                                 setNewPlaceName(place.name);
                                 setSelectedLocation(nextLocation);
                                 setMapCenter(nextLocation);
                                 setMapZoom(16);
+
                                 if (placeError) {
                                   setPlaceError("");
                                 }

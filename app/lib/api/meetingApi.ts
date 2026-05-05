@@ -11,7 +11,12 @@ import {
 
 export type { MeetingRecord } from "../meetingStorage";
 
-type LocalActionResult = ReturnType<typeof addPlaceToMeeting>;
+type LocalActionResult =
+  | ReturnType<typeof addPlaceToMeeting>
+  | ReturnType<typeof clearFinalPlace>
+  | ReturnType<typeof removePlaceFromMeeting>
+  | ReturnType<typeof setFinalPlace>
+  | ReturnType<typeof toggleVoteForPlace>;
 
 type AddCandidatePlacePayload = {
   groupCode: string;
@@ -36,18 +41,20 @@ function createMeetingRecordFromGroup(
   group: GroupResponse,
   localMeeting: MeetingRecord | null,
 ): MeetingRecord {
-  const baseMeeting =
-    localMeeting ??
-    ({
-      roomId: group.code,
-      title: group.name,
-      joinCode: group.code,
-      deadlineAt: "",
-      hostParticipantId: "",
-      participants: [],
-      places: [],
-      finalPlaceId: null,
-    } as MeetingRecord);
+  const fallbackMeeting: MeetingRecord = {
+    roomId: group.code,
+    title: group.name,
+    joinCode: group.code,
+    deadlineAt: group.deadlineAt ?? "",
+    createdAt: new Date().toISOString(),
+    participants: [],
+    places: [],
+    finalPlaceId: null,
+    hostParticipantId: null,
+    hostNickname: null,
+  };
+
+  const baseMeeting = localMeeting ?? fallbackMeeting;
 
   return {
     ...baseMeeting,
@@ -68,6 +75,7 @@ export async function getMeetingByCode(
   }
 
   const localMeeting = getMeetingByRoomId(groupCode);
+
   return createMeetingRecordFromGroup(group, localMeeting);
 }
 

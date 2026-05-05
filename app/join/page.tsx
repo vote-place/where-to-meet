@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Header from "../components/Header";
 import { getGroupByCode } from "../lib/api/groupApi";
@@ -14,7 +14,7 @@ function normalizeJoinInput(value: string) {
   return value.trim();
 }
 
-export default function JoinPage() {
+function JoinPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -149,9 +149,11 @@ export default function JoinPage() {
                   }
                 }}
               />
+
               <p className="join-help-text">
                 참여 코드는 공유받은 그대로 입력해주세요.
               </p>
+
               {errors.joinCode && (
                 <p className="join-error-text">{errors.joinCode}</p>
               )}
@@ -176,5 +178,35 @@ export default function JoinPage() {
         </section>
       </main>
     </div>
+  );
+}
+
+function JoinPageFallback() {
+  return (
+    <div className="app join-page">
+      <Header />
+
+      <main className="join-main">
+        <section className="join-shell">
+          <div className="join-page-heading">
+            <p className="join-page-eyebrow">JOIN A MEET</p>
+            <h1>
+              참여 코드를 입력하고
+              <br />
+              바로 모임에 들어가세요
+            </h1>
+            <p className="join-page-description">참여 화면을 불러오는 중입니다.</p>
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}
+
+export default function JoinPage() {
+  return (
+    <Suspense fallback={<JoinPageFallback />}>
+      <JoinPageContent />
+    </Suspense>
   );
 }
